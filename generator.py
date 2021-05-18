@@ -1,39 +1,4 @@
-from statemachine import StateMachine, State, Transition
-
-# define states for a master (way of passing args to class)
-options = [
-    {"name": "IDLE", "initial": True, "value": "idle"},  # 0
-    {"name": "A", "initial": False, "value": "a"},  # 1
-    {"name": "B", "initial": False, "value": "b"},  # 2
-    {"name": "C", "initial": False, "value": "c"},  # 3
-    {"name": "F", "initial": False, "value": "f"}]  # 4
-
-# create State objects for a master
-# ** -> unpack dict to args
-master_states = [State(**opt) for opt in options]
-
-# valid transitions for a master (indices of states from-to)
-form_to = [
-    [0, [1, 2, 3]],
-    [1, [2, 3, 4]],
-    [2, [1, 3, 4]],
-    [3, [1, 2, 4]],
-    [4, []],
-]
-
-# create transitions for a master (as a dict)
-master_transitions = {}
-for indices in form_to:
-    from_idx, to_idx_tuple = indices  # unpack list of two elements into separate from_idx and to_idx_tuple
-    for to_idx in to_idx_tuple:  # iterate over destinations from a source state
-        op_identifier = "m_{}_{}".format(from_idx, to_idx)  # parametrize identifier of a transition
-
-        # create transition object and add it to the master_transitions dict
-        transition = Transition(master_states[from_idx], master_states[to_idx], identifier=op_identifier)
-        master_transitions[op_identifier] = transition
-
-        # add transition to source state
-        master_states[from_idx].transitions.append(transition)
+from statemachine import StateMachine, Transition
 
 
 # create a generator class
@@ -80,41 +45,20 @@ class Generator(StateMachine):
         return cls(states, transitions)
 
 
-# create paths from transitions (exemplary)
-path_1 = ["m_0_1", "m_1_2", "m_2_1", "m_1_3", "m_3_4"]
-path_2 = ["m_0_2", "m_2_3", "m_3_2", "m_2_4"]
-path_3 = ["m_0_3", "m_3_1", "m_1_2", "m_2_4"]
-paths = [path_1, path_2, path_3]
+def create_transitions(states, from_to, master):
+    master_transitions = {}
+    for indices in from_to:
+        from_idx, to_idx_tuple = indices  # unpack list of two elements into separate from_idx and to_idx_tuple
+        for to_idx in to_idx_tuple:  # iterate over destinations from a source state
+            if master:
+                op_identifier = 'm_{}_{}'.format(from_idx, to_idx)  # parametrize identifier of a transition
+            else:
+                op_identifier = 's_{}_{}'.format(from_idx, to_idx)  # parametrize identifier of a transition
 
-# execute paths
-for path in paths:
+            # create transition object and add it to the master_transitions dict
+            transition = Transition(states[from_idx], states[to_idx], identifier=op_identifier)
+            master_transitions[op_identifier] = transition
 
-    # create a supervisor
-    supervisor = Generator.create_master(master_states, master_transitions)
-    print('\n' + str(supervisor))
-
-    # run supervisor for exemplary path
-    print("Executing path: {}".format(path))
-    for event in path:
-
-        # launch a transition in our supervisor
-        master_transitions[event]._run(supervisor)
-        print(supervisor.current_state)
-
-        # add slave
-        if supervisor.current_state.value == "a":
-            # TODO: automata 1 (for) slave1
-            ...
-
-        if supervisor.current_state.value == "b":
-            # TODO: automata 2 (for) slave2
-            ...
-
-        if supervisor.current_state.value == "c":
-            # TODO: automata 3 (for) slave3
-            ...
-
-        if supervisor.current_state.value == "f":
-            # TODO: automata 3 (for) slave3
-            ...
-            print("Supervisor done!")
+            # add transition to source state
+            states[from_idx].transitions.append(transition)
+    return master_transitions
