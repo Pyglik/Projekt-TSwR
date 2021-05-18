@@ -1,5 +1,6 @@
 from statemachine import State
 from generator import Generator, create_transitions
+from graph import draw_graph
 
 # define states for a master (way of passing args to class)
 master_options = [
@@ -88,29 +89,36 @@ while True:
     print('Aktualny stan:', state_machine.current_state.name)
     tranzycje = state_machine.allowed_transitions
 
+    id = state_machine.states.index(state_machine.current_state)
+    if master_on:
+        state = 'm'+str(id)
+    else:
+        state = 's'+str(id)
+    draw_graph(state)
+
     # Ręczne wybieranie tranzycji
-    # print('Dostępne tranzycje:')
-    # for i in range(len(tranzycje)):
-    #     print(str(i + 1) + '.', events[tranzycje[i].identifier], '->', tranzycje[i].destinations[0].name)
-    #
-    # print('Wybierz zdarzenie:', end=' ')
-    # zd = int(input()) - 1
-    # while zd not in range(len(tranzycje)):
-    #     print('Niepoprawne zdarzenie.')
-    #     print('Podaj numer zdarzenia:', end=' ')
-    #     zd = int(input()) - 1
-    #
-    # t = tranzycje[zd]
+    print('Dostępne tranzycje:')
+    for i in range(len(tranzycje)):
+        print(str(i + 1) + '.', events[tranzycje[i].identifier], '->', tranzycje[i].destinations[0].name)
+
+    print('Wybierz zdarzenie:', end=' ')
+    zd = int(input()) - 1
+    while zd not in range(len(tranzycje)):
+        print('Niepoprawne zdarzenie.')
+        print('Podaj numer zdarzenia:', end=' ')
+        zd = int(input()) - 1
+
+    t = tranzycje[zd]
 
     # Automatyczne wybieranie tranzycji
-    if master_on:
-        t = master_transitions[path[i]]
-    else:
-        t = slave_transitions[path[i]]
-    print("Tranzycja: ", events[t.identifier], '->', t.destinations[0].name)
-    i += 1
-    if i >= len(path):
-        exit()
+    # if master_on:
+    #     t = master_transitions[path[i]]
+    # else:
+    #     t = slave_transitions[path[i]]
+    # print("Tranzycja: ", events[t.identifier], '->', t.destinations[0].name)
+    # i += 1
+    # if i >= len(path):
+    #     exit()
 
     # Wykonanie tranzycji
     t._run(state_machine)
