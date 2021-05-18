@@ -69,48 +69,13 @@ slave_states = [State(**opt) for opt in slave_options]
 # create transitions for a master (as a dict)
 slave_transitions = create_transitions(slave_states, slave_from_to, master=False)
 
-# # create paths from transitions (exemplary)
-# path_1 = ['m_0_1', 'm_1_2', 'm_2_1', 'm_1_3', 'm_3_4']
-# path_2 = ['m_0_2', 'm_2_3', 'm_3_2', 'm_2_4']
-# path_3 = ['m_0_3', 'm_3_1', 'm_1_2', 'm_2_4']
-# paths = [path_1, path_2, path_3]
-#
-# # execute paths
-# for path in paths:
-#
-#     # create a supervisor
-#     supervisor = Generator.create_master(master_states, master_transitions)
-#     print('\n' + str(supervisor))
-#
-#     # run supervisor for exemplary path
-#     print('Executing path: {}'.format(path))
-#     for event in path:
-#
-#         # launch a transition in our supervisor
-#         master_transitions[event]._run(supervisor)
-#         print(supervisor.current_state)
-#
-#         # add slave
-#         if supervisor.current_state.value == 'a':
-#             # TODO: automata 1 (for) slave1
-#             ...
-#
-#         if supervisor.current_state.value == 'b':
-#             # TODO: automata 2 (for) slave2
-#             ...
-#
-#         if supervisor.current_state.value == 'c':
-#             # TODO: automata 3 (for) slave3
-#             ...
-#
-#         if supervisor.current_state.value == 'f':
-#             # TODO: automata 3 (for) slave3
-#             ...
-#             print('Supervisor done!')
+# create path from transitions (exemplary)
+path = ['m_0_1', 'm_1_2', 'm_2_1', 'm_1_4', 's_0_2', 's_2_4', 'm_1_3', 'm_3_1', 'm_1_0']
 
 master = Generator.create_master(master_states, master_transitions)
 slave = Generator.create_master(slave_states, slave_transitions)
 
+i = 0
 master_on = True
 while True:
     if master_on:
@@ -123,22 +88,34 @@ while True:
     print('Aktualny stan:', state_machine.current_state.name)
     tranzycje = state_machine.allowed_transitions
 
-    print('Dostępne tranzycje:')
-    for i in range(len(tranzycje)):
-        print(str(i + 1) + '.', events[tranzycje[i].identifier],
-              '->', tranzycje[i].destinations[0].name)
+    # Ręczne wybieranie tranzycji
+    # print('Dostępne tranzycje:')
+    # for i in range(len(tranzycje)):
+    #     print(str(i + 1) + '.', events[tranzycje[i].identifier], '->', tranzycje[i].destinations[0].name)
+    #
+    # print('Wybierz zdarzenie:', end=' ')
+    # zd = int(input()) - 1
+    # while zd not in range(len(tranzycje)):
+    #     print('Niepoprawne zdarzenie.')
+    #     print('Podaj numer zdarzenia:', end=' ')
+    #     zd = int(input()) - 1
+    #
+    # t = tranzycje[zd]
 
-    print('Wybierz zdarzenie:', end=' ')
-    zd = int(input()) - 1
-    while zd not in range(len(tranzycje)):
-        print('Niepoprawne zdarzenie.')
-        print('Podaj numer zdarzenia:', end=' ')
-        zd = int(input()) - 1
+    # Automatyczne wybieranie tranzycji
+    if master_on:
+        t = master_transitions[path[i]]
+    else:
+        t = slave_transitions[path[i]]
+    print("Tranzycja: ", events[t.identifier], '->', t.destinations[0].name)
+    i += 1
+    if i >= len(path):
+        exit()
 
-    tranzycje[zd]._run(state_machine)
+    # Wykonanie tranzycji
+    t._run(state_machine)
 
-    if tranzycje[zd].identifier == 's_1_4' or tranzycje[zd].identifier == 's_2_4'\
-            or tranzycje[zd].identifier == 's_3_4':
+    if t.identifier == 's_1_4' or t.identifier == 's_2_4' or t.identifier == 's_3_4':
         print('--------------------------------')
         print('Aktualny stan:', state_machine.current_state.name)
         print('Koniec podprocesu.')
@@ -148,6 +125,6 @@ while True:
 
     print('--------------------------------')
 
-    if tranzycje[zd].identifier == 'm_1_4':
+    if t.identifier == 'm_1_4':
         print('Przejście do podprocesu.')
         master_on = False
