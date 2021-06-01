@@ -21,33 +21,33 @@ class MirControler:
         self.turn_angle = PI/6
         self.start_angle = None
     
-    def idle():
+    def idle(self):
         self.callbacks.velocity = 0
         self.callbacks.rotation = 0
         self.callbacks.publish()
     
-    def drive():
+    def drive(self):
         self.callbacks.velocity = self.vel
         self.callbacks.rotation = 0
         self.callbacks.publish()
         self.start_angle = self.callbacks.pose_angle
     
-    def turn_left():
+    def turn_left(self):
         self.callbacks.velocity = self.vel
         self.callbacks.rotation = self.rot
         self.callbacks.publish()
     
-    def turn_right():
+    def turn_right(self):
         self.callbacks.velocity = self.vel
         self.callbacks.rotation = -self.rot
         self.callbacks.publish()
     
-    def turn_around():
+    def turn_around(self):
         self.callbacks.velocity = 0
         self.callbacks.rotation = self.rot
         self.callbacks.publish()
     
-    def turn_left_end():
+    def turn_left_end(self):
         angle_diff = self.callbacks.pose_angle-self.start_angle
         if angle_diff < PI:
             angle_diff += 2*PI
@@ -59,7 +59,7 @@ class MirControler:
         else:
             return False
     
-    def turn_right_end():
+    def turn_right_end(self):
         angle_diff = self.callbacks.pose_angle-self.start_angle
         if angle_diff < PI:
             angle_diff += 2*PI
@@ -71,7 +71,7 @@ class MirControler:
         else:
             return False
     
-    def turn_around_end():
+    def turn_around_end(self):
         angle_diff = self.callbacks.pose_angle-self.start_angle
         if angle_diff < PI:
             angle_diff += 2*PI
@@ -83,16 +83,16 @@ class MirControler:
         else:
             return False
     
-    def obstacle()
+    def obstacle(self):
         return self.callbacks.detection[1]
     
-    def obstacle_r()
+    def obstacle_r(self):
         return not self.callbacks.detection[0] and self.callbacks.detection[2]
     
-    def obstacle_lf()
+    def obstacle_lf(self):
         return not self.callbacks.detection[2]
     
-    def obstacle_lr()
+    def obstacle_lr(self):
         return self.callbacks.detection[0] and self.callbacks.detection[2]
     
 
@@ -143,4 +143,3 @@ class Callbacks:
             move_cmd.angular.z = self.rotation
             
             self.cmd_pub.publish(move_cmd)
-

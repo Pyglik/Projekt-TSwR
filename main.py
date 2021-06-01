@@ -100,6 +100,7 @@ while True:
         state = 's'+str(id)
     draw_graph(state)
 
+    # --------------------------------
     # Ręczne wybieranie tranzycji
     # print('Dostępne tranzycje:')
     # for i in range(len(tranzycje)):
@@ -113,7 +114,7 @@ while True:
     #     zd = int(input()) - 1
     #
     # t = tranzycje[zd]
-
+    # --------------------------------
     # Automatyczne wybieranie tranzycji
     # if master_on:
     #     t = master_transitions[path[i]]
@@ -123,13 +124,46 @@ while True:
     # i += 1
     # if i >= len(path):
     #     exit()
-    
+    # --------------------------------
     # Symulacja
-    # stany -> wyjścia
+    # sterowanie robotem
+    if master_on and id == 0:  # Robot bezczynny
+        mir_con.idle()
+    elif master_on and id == 1:  # Jazda do przodu
+        mir_con.drive()
+    elif master_on and id == 2:  # Skręcanie w lewo
+        mir_con.turn_left()
+    elif master_on and id == 3:  # Skręcanie w prawo
+        mir_con.turn_right()
+    elif not master_on and id == 1:  # Skręcanie w lewo
+        mir_con.turn_left()
+    elif not master_on and id == 2:  # Skręcanie w prawo
+        mir_con.turn_right()
+    elif not master_on and id == 3:  # Zawracanie
+        mir_con.turn_around()
+
+    # tranzycje z klawiatury
     t = None
-    # klawiatura -> przejścia
-    k = waitKey(100)
-    # zdarzenia na przejścia
+    key = waitKey(100)
+    if master_on and key == ord('w'):  # Start
+        t = master_transitions['m_0_1']
+    elif master_on and key == ord('s'):  # Stop
+        t = master_transitions['m_1_0']
+    elif master_on and key == ord('a'):  # Skręć w lewo
+        t = master_transitions['m_1_2']
+    elif master_on and key == ord('d'):  # Skręć w prawo
+        t = master_transitions['m_1_3']
+
+    # tranzycje z robota
+    if master_on and mir_con.obstacle():  # Przed robotem wykryto przeszkodę
+        t = master_transitions['m_1_4']
+    elif not master_on and mir_con.obstacle_r():  # Przeszkoda wykryta z prawej
+        t = slave_transitions['s_0_1']
+    elif not master_on and mir_con.obstacle_lf():  # Przeszkoda wykryta z lewej lub z przodu
+        t = slave_transitions['s_0_2']
+    elif not master_on and mir_con.obstacle_lr():  # Przeszkoda wykryta z obu stron
+        t = slave_transitions['s_0_3']
+    # --------------------------------
 
     # Wykonanie tranzycji
     if t:
@@ -148,4 +182,3 @@ while True:
         if t.identifier == 'm_1_4':
             print('Przejście do podprocesu.')
             master_on = False
-
