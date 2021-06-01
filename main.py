@@ -1,6 +1,8 @@
 from statemachine import State
+from cv2 import waitKey
 from generator import Generator, create_transitions
 from graph import draw_graph
+from mir_controler import MirControler
 
 # define states for a master (way of passing args to class)
 master_options = [
@@ -76,6 +78,8 @@ path = ['m_0_1', 'm_1_2', 'm_2_1', 'm_1_4', 's_0_2', 's_2_4', 'm_1_3', 'm_3_1', 
 master = Generator.create_master(master_states, master_transitions)
 slave = Generator.create_master(slave_states, slave_transitions)
 
+mir_con = MirControler()
+
 i = 0
 master_on = True
 while True:
@@ -97,18 +101,18 @@ while True:
     draw_graph(state)
 
     # Ręczne wybieranie tranzycji
-    print('Dostępne tranzycje:')
-    for i in range(len(tranzycje)):
-        print(str(i + 1) + '.', events[tranzycje[i].identifier], '->', tranzycje[i].destinations[0].name)
-
-    print('Wybierz zdarzenie:', end=' ')
-    zd = int(input()) - 1
-    while zd not in range(len(tranzycje)):
-        print('Niepoprawne zdarzenie.')
-        print('Podaj numer zdarzenia:', end=' ')
-        zd = int(input()) - 1
-
-    t = tranzycje[zd]
+    # print('Dostępne tranzycje:')
+    # for i in range(len(tranzycje)):
+    #     print(str(i + 1) + '.', events[tranzycje[i].identifier], '->', tranzycje[i].destinations[0].name)
+    #
+    # print('Wybierz zdarzenie:', end=' ')
+    # zd = int(input()) - 1
+    # while zd not in range(len(tranzycje)):
+    #     print('Niepoprawne zdarzenie.')
+    #     print('Podaj numer zdarzenia:', end=' ')
+    #     zd = int(input()) - 1
+    #
+    # t = tranzycje[zd]
 
     # Automatyczne wybieranie tranzycji
     # if master_on:
@@ -119,20 +123,29 @@ while True:
     # i += 1
     # if i >= len(path):
     #     exit()
+    
+    # Symulacja
+    # stany -> wyjścia
+    t = None
+    # klawiatura -> przejścia
+    k = waitKey(100)
+    # zdarzenia na przejścia
 
     # Wykonanie tranzycji
-    t._run(state_machine)
+    if t:
+        t._run(state_machine)
 
-    if t.identifier == 's_1_4' or t.identifier == 's_2_4' or t.identifier == 's_3_4':
+        if t.identifier == 's_1_4' or t.identifier == 's_2_4' or t.identifier == 's_3_4':
+            print('--------------------------------')
+            print('Aktualny stan:', state_machine.current_state.name)
+            print('Koniec podprocesu.')
+            slave = Generator.create_master(slave_states, slave_transitions)
+            master_transitions['m_4_1']._run(master)
+            master_on = True
+
         print('--------------------------------')
-        print('Aktualny stan:', state_machine.current_state.name)
-        print('Koniec podprocesu.')
-        slave = Generator.create_master(slave_states, slave_transitions)
-        master_transitions['m_4_1']._run(master)
-        master_on = True
 
-    print('--------------------------------')
+        if t.identifier == 'm_1_4':
+            print('Przejście do podprocesu.')
+            master_on = False
 
-    if t.identifier == 'm_1_4':
-        print('Przejście do podprocesu.')
-        master_on = False
