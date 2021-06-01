@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+
+import rospy
+from tf.transformations import euler_from_quaternion
+from gazebo_msgs.msg import ModelStates
+from sensor_msgs.msg import LaserScan
+from geometry_msgs.msg import Twist
+
+# start symulacji robota
+# roslaunch mir_gazebo mir_maze_world.launch
+
+PI = 3.1415926535897
+MIN_RANGE = 2.0  # odległość wykrycia przeszkody
+ANGLE_OFFSET = 45  # ustawienie skanera laserowego względem robota
+ANGLE_RANGE = [90, 30, -30, -90]  # zakresy wykrywania po lewej, na wprost i po prawej
+
+class Callbacks:
+    def __init__(self):
+        self.pose_angle = None
+        self.angle_min = None
+        self.angle_max = None
+        self.angle_increment = None
+        self.scan = None
+        self.detection = None
+        self.velocity = None
+        self.rotation = None
+        rospy.Subscriber("/gazebo/model_states", ModelStates, self.state_callback)
+        rospy.Subscriber("/f_scan", LaserScan, self.scan_callback)
+        self.cmd_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=5)
+
+    def state_callback(self, data):
+        i = data.name.index('mir')
+        orientation_q = data.pose[i].orientation
+        orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
+        (roll, pitch, yaw) = euler_from_quaternion(orientation_list)
+        self.pose_angle = yaw
+        
+        # print(self.pose_angle)
+
+    def scan_callback(self, data):
+        self.angle_min = data.angle_min
+        self.angle_max = data.angle_max
+        self.angle_increment = data.angle_increment
+        self.scan = data.ranges
+        
+        self.detection = [False, False, False]
+        for i, range in enumerate(self.scan):
+            if range < MIN_RANGE:
+                angle_rad = self.angle_min+i*self.angle_increment
+                angle = angle_rad*180/PI+ANGLE_OFFSET
+                
+                if ANGLE_RANGE[0] > angle > ANGLE_RANGE[1]:
+                    self.detection[0] = True
+                elif ANGLE_RANGE[1] > angle > ANGLE_RANGE[2]:
+                    self.detection[1] = True
+                elif ANGLE_RANGE[2] > angle > ANGLE_RANGE[3]:
+                    self.detection[2] = True
+        
+        print(self.detection)
+
+    def publish(self):
+        if self.velocity and self.rotation:
+            move_cmd = Twist()
+            move_cmd.linear.x = self.velocity
+            move_cmd.angular.z = self.rotation
+            
+            self.cmd_pub.publish(move_cmd)
+
+
+if __name__ == '__main__':
+    rospy.init_node('mir_controler')
+    callbacks = Callbacks()
+    try:
+        rate = rospy.Rate(10)  # 10hz
+        while not rospy.is_shutdown():
+            callbacks.publish()
+            rate.sleep()
+    except rospy.ROSInterruptException:
+        pass
