@@ -1,8 +1,19 @@
 from statemachine import State
-from cv2 import waitKey
+from pynput import keyboard
 from generator import Generator, create_transitions
 from graph import draw_graph
 from mir_controler import MirControler
+
+key = None
+
+
+def on_press(k):
+    global key
+    try:
+        key = k.char
+    except AttributeError:
+        pass
+
 
 # define states for a master (way of passing args to class)
 master_options = [
@@ -80,6 +91,9 @@ slave = Generator.create_master(slave_states, slave_transitions)
 
 mir_con = MirControler()
 
+listener = keyboard.Listener(on_press=on_press)
+listener.start()
+
 i = 0
 master_on = True
 while True:
@@ -144,18 +158,30 @@ while True:
 
     # tranzycje z klawiatury
     t = None
-    key = waitKey(100)
-    if master_on and key == ord('w'):  # Start
+    if key == 'q':  # zatrzymanie symulacji
+        exit(0)
+    elif master_on and key == 'w':  # Start
         t = master_transitions['m_0_1']
-    elif master_on and key == ord('s'):  # Stop
+    elif master_on and key == 's':  # Stop
         t = master_transitions['m_1_0']
-    elif master_on and key == ord('a'):  # Skręć w lewo
+    elif master_on and key == 'a':  # Skręć w lewo
         t = master_transitions['m_1_2']
-    elif master_on and key == ord('d'):  # Skręć w prawo
+    elif master_on and key == 'd':  # Skręć w prawo
         t = master_transitions['m_1_3']
+    key = None
 
     # tranzycje z robota
-    if master_on and mir_con.obstacle():  # Przed robotem wykryto przeszkodę
+    if not master_on and mir_con.turn_around_end():  # Koniec zawracania
+        t = slave_transitions['s_3_4']
+    elif master_on and mir_con.turn_left_end():  # Koniec skręcania
+        t = master_transitions['m_2_1']
+    elif master_on and mir_con.turn_right_end():  # Koniec skręcania
+        t = master_transitions['m_3_1']
+    elif not master_on and mir_con.turn_left_end():  # Koniec skręcania
+        t = slave_transitions['s_1_4']
+    elif not master_on and mir_con.turn_right_end():  # Koniec skręcania
+        t = slave_transitions['s_2_4']
+    elif master_on and id == 1 and mir_con.obstacle():  # Przed robotem wykryto przeszkodę
         t = master_transitions['m_1_4']
     elif not master_on and mir_con.obstacle_r():  # Przeszkoda wykryta z prawej
         t = slave_transitions['s_0_1']
@@ -166,7 +192,7 @@ while True:
     # --------------------------------
 
     # Wykonanie tranzycji
-    if t:
+    if t in tranzycje:
         t._run(state_machine)
 
         if t.identifier == 's_1_4' or t.identifier == 's_2_4' or t.identifier == 's_3_4':

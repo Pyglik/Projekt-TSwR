@@ -6,11 +6,13 @@ from geometry_msgs.msg import Twist
 
 # start symulacji robota
 # roslaunch mir_gazebo mir_maze_world.launch
+# kliknij play w Gazebo
 
 PI = 3.1415926535897
-MIN_RANGE = 2.0  # odległość wykrycia przeszkody
+MIN_RANGE = 3.0  # odległość wykrycia przeszkody
 ANGLE_OFFSET = 45  # ustawienie skanera laserowego względem robota
 ANGLE_RANGE = [90, 30, -30, -90]  # zakresy wykrywania po lewej, na wprost i po prawej
+
 
 class MirControler:
     def __init__(self):
@@ -48,8 +50,10 @@ class MirControler:
         self.callbacks.publish()
     
     def turn_left_end(self):
+        if self.start_angle is None or self.callbacks.pose_angle is None:
+            return False
         angle_diff = self.callbacks.pose_angle-self.start_angle
-        if angle_diff < PI:
+        if angle_diff < -PI:
             angle_diff += 2*PI
         elif angle_diff > PI:
             angle_diff -= 2*PI
@@ -60,25 +64,29 @@ class MirControler:
             return False
     
     def turn_right_end(self):
+        if self.start_angle is None or self.callbacks.pose_angle is None:
+            return False
         angle_diff = self.callbacks.pose_angle-self.start_angle
-        if angle_diff < PI:
+        if angle_diff < -PI:
             angle_diff += 2*PI
         elif angle_diff > PI:
             angle_diff -= 2*PI
         
-        if angle_diff <= self.turn_angle:
+        if angle_diff <= -self.turn_angle:
             return True
         else:
             return False
     
     def turn_around_end(self):
+        if self.start_angle is None or self.callbacks.pose_angle is None:
+            return False
         angle_diff = self.callbacks.pose_angle-self.start_angle
-        if angle_diff < PI:
+        if angle_diff < -PI:
             angle_diff += 2*PI
         elif angle_diff > PI:
             angle_diff -= 2*PI
-        
-        if abs(angle_diff) >= 0.99*PI:
+
+        if abs(angle_diff) >= 0.8*PI:
             return True
         else:
             return False
@@ -103,7 +111,7 @@ class Callbacks:
         self.angle_max = None
         self.angle_increment = None
         self.scan = None
-        self.detection = None
+        self.detection = [False, False, False]
         self.velocity = None
         self.rotation = None
         rospy.Subscriber("/gazebo/model_states", ModelStates, self.state_callback)
@@ -137,7 +145,7 @@ class Callbacks:
                     self.detection[2] = True
 
     def publish(self):
-        if self.velocity and self.rotation:
+        if self.velocity is not None and self.rotation is not None:
             move_cmd = Twist()
             move_cmd.linear.x = self.velocity
             move_cmd.angular.z = self.rotation
