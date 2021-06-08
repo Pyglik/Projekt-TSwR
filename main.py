@@ -104,6 +104,7 @@ while True:
         state_machine = slave
         events = slave_events
 
+    print('--------------------------------')
     print('Aktualny stan:', state_machine.current_state.name)
     tranzycje = state_machine.allowed_transitions
 
@@ -115,7 +116,7 @@ while True:
     draw_graph(state)
 
     # --------------------------------
-    # Ręczne wybieranie tranzycji
+    # # Ręczne wybieranie tranzycji
     # print('Dostępne tranzycje:')
     # for i in range(len(tranzycje)):
     #     print(str(i + 1) + '.', events[tranzycje[i].identifier], '->', tranzycje[i].destinations[0].name)
@@ -129,7 +130,7 @@ while True:
     #
     # t = tranzycje[zd]
     # --------------------------------
-    # Automatyczne wybieranie tranzycji
+    # # Automatyczne wybieranie tranzycji
     # if master_on:
     #     t = master_transitions[path[i]]
     # else:
@@ -139,36 +140,42 @@ while True:
     # if i >= len(path):
     #     exit()
     # --------------------------------
-    # Symulacja
+    # # Symulacja
     # sterowanie robotem
-    if master_on and id == 0:  # Robot bezczynny
+    if state == 'm0':  # Robot bezczynny
         mir_con.idle()
-    elif master_on and id == 1:  # Jazda do przodu
+    elif state == 'm1':  # Jazda do przodu
         mir_con.drive()
-    elif master_on and id == 2:  # Skręcanie w lewo
-        mir_con.turn_left()
-    elif master_on and id == 3:  # Skręcanie w prawo
-        mir_con.turn_right()
-    elif not master_on and id == 1:  # Skręcanie w lewo
-        mir_con.turn_left()
-    elif not master_on and id == 2:  # Skręcanie w prawo
-        mir_con.turn_right()
-    elif not master_on and id == 3:  # Zawracanie
-        mir_con.turn_around()
+    elif state == 'm2':  # Skręcanie w lewo
+        while not mir_con.turn_left_end():
+            mir_con.turn_left()
+    elif state == 'm3':  # Skręcanie w prawo
+        while not mir_con.turn_right_end():
+            mir_con.turn_right()
+    elif state == 's1':  # Skręcanie w lewo
+        while not mir_con.turn_left_end():
+            mir_con.turn_left()
+    elif state == 's2':  # Skręcanie w prawo
+        while not mir_con.turn_right_end():
+            mir_con.turn_right()
+    elif state == 's3':  # Zawracanie
+        while not mir_con.turn_around_end():
+            mir_con.turn_around()
 
-    # tranzycje z klawiatury
     t = None
-    if key == 'q':  # zatrzymanie symulacji
-        exit(0)
-    elif master_on and key == 'w':  # Start
-        t = master_transitions['m_0_1']
-    elif master_on and key == 's':  # Stop
-        t = master_transitions['m_1_0']
-    elif master_on and key == 'a':  # Skręć w lewo
-        t = master_transitions['m_1_2']
-    elif master_on and key == 'd':  # Skręć w prawo
-        t = master_transitions['m_1_3']
-    key = None
+
+    # # tranzycje z klawiatury
+    # if key == 'q':  # zatrzymanie symulacji
+    #     exit(0)
+    # elif master_on and key == 'w':  # Start
+    #     t = master_transitions['m_0_1']
+    # elif master_on and key == 's':  # Stop
+    #     t = master_transitions['m_1_0']
+    # elif master_on and key == 'a':  # Skręć w lewo
+    #     t = master_transitions['m_1_2']
+    # elif master_on and key == 'd':  # Skręć w prawo
+    #     t = master_transitions['m_1_3']
+    # key = None
 
     # tranzycje z robota
     if not master_on and mir_con.turn_around_end():  # Koniec zawracania
@@ -189,6 +196,31 @@ while True:
         t = slave_transitions['s_0_2']
     elif not master_on and mir_con.obstacle_lr():  # Przeszkoda wykryta z obu stron
         t = slave_transitions['s_0_3']
+
+    if t is not None:
+        print('Automatyczna tranzycja: ', events[t.identifier], '->', t.destinations[0].name)
+        input('Wciśnij Enter...')
+    else:  # tranzycje ręczne
+        print('Dostępne tranzycje:')
+        for i in range(len(tranzycje)):
+            print(str(i + 1) + '.', events[tranzycje[i].identifier], '->', tranzycje[i].destinations[0].name)
+        print(str(len(tranzycje) + 1) + '. Pozostań w aktualnym stanie')
+
+        print('Wybierz zdarzenie:', end=' ')
+        inp = input()
+        if inp == 'q':
+            exit(0)
+        zd = int(input()) - 1
+        while zd not in range(len(tranzycje) + 1):
+            print('Niepoprawne zdarzenie.')
+            print('Podaj numer zdarzenia:', end=' ')
+            inp = input()
+            if inp == 'q':
+                exit(0)
+            zd = int(input()) - 1
+
+        if zd != len(tranzycje):
+            t = tranzycje[zd]
     # --------------------------------
 
     # Wykonanie tranzycji
@@ -202,8 +234,6 @@ while True:
             slave = Generator.create_master(slave_states, slave_transitions)
             master_transitions['m_4_1']._run(master)
             master_on = True
-
-        print('--------------------------------')
 
         if t.identifier == 'm_1_4':
             print('Przejście do podprocesu.')
