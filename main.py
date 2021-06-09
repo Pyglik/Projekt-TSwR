@@ -15,6 +15,40 @@ def on_press(k):
         pass
 
 
+def check_recurrence(cur_state, end_state, to_visit):
+    if cur_state == end_state:
+        return []
+    to_visit.remove(cur_state)
+    if not to_visit:
+        return None
+
+    output = None
+    for t in cur_state.transitions:
+        next_s = t.destinations[0]
+        if next_s not in to_visit:
+            continue
+        out = check_recurrence(next_s, end_state, to_visit.copy())
+        if out is not None and (output is None or len(out)+1 < len(output)):
+            output = out
+            output.append(t)
+
+    return output
+
+
+def check_state_machine(state_machine, start_state, end_state):
+    if start_state not in state_machine.states or end_state not in state_machine.states:
+        print('Co najmniej jeden z podanych stanów nie należy do automatu!')
+        return None
+    to_visit = state_machine.states
+    output = check_recurrence(start_state, end_state, to_visit.copy())
+    if output is None:
+        print('Brak połączenia między podanymi stanami!')
+        return None
+    output = [t.identifier for t in output]
+    output.reverse()
+    return output
+
+
 # define states for a master (way of passing args to class)
 master_options = [
     {'name': 'Robot bezczynny', 'initial': True},  # 0
@@ -88,6 +122,11 @@ path = ['m_0_1', 'm_1_2', 'm_2_1', 'm_1_4', 's_0_2', 's_2_4', 'm_1_3', 'm_3_1', 
 
 master = Generator.create_master(master_states, master_transitions)
 slave = Generator.create_master(slave_states, slave_transitions)
+
+print(check_state_machine(master, master_states[0], master_states[3]))
+print(check_state_machine(slave, slave_states[0], slave_states[4]))
+print(check_state_machine(master, master_states[1], slave_states[3]))
+print(check_state_machine(slave, slave_states[1], slave_states[2]))
 
 mir_con = MirControler()
 

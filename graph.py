@@ -50,7 +50,7 @@ def draw_graph(state):
     nx.draw(G, pos, node_size=1000, node_color=node_color, with_labels=False)
     nx.draw_networkx_labels(G, pos, state_names, font_size=10)
     nx.draw_networkx_edge_labels(G, pos, edge_names, font_size=8)
-    plt.savefig('networkx.png')
+    # plt.savefig('networkx.png')
     plt.ion()
     plt.show()
     plt.pause(0.001)
