@@ -249,14 +249,14 @@ while True:
         inp = input()
         if inp == 'q':
             exit(0)
-        zd = int(input()) - 1
+        zd = int(inp) - 1
         while zd not in range(len(tranzycje) + 1):
             print('Niepoprawne zdarzenie.')
             print('Podaj numer zdarzenia:', end=' ')
             inp = input()
             if inp == 'q':
                 exit(0)
-            zd = int(input()) - 1
+            zd = int(inp) - 1
 
         if zd != len(tranzycje):
             t = tranzycje[zd]
